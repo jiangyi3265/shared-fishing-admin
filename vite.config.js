@@ -6,7 +6,7 @@ import createVitePlugins from './vite/plugins'
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd())
   const { VITE_APP_ENV } = env
-  const proxyTarget = env.VITE_APP_DEV_PROXY_TARGET || 'http://localhost:8080'
+  const proxyTarget = env.VITE_APP_DEV_PROXY_TARGET || 'http://localhost:8005'
   const devPort = Number(env.VITE_APP_PORT || 5173)
   return {
     // 部署生产环境和开发环境下的URL。
