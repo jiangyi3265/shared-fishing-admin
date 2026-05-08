@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-admin-web
+  cancel-in-progress: true
+
 env:
   DEPLOY_DIR: /www/wwwroot/dyht.oksja.cn
 
@@ -28,7 +32,9 @@ jobs:
         run: npm run build:prod
 
       - name: Package artifact
-        run: tar -czf admin-dist.tar.gz -C dist .
+        run: |
+          tar -czf admin-dist.tar.gz -C dist .
+          ls -lh admin-dist.tar.gz
 
       - name: Install SSH helper
         run: |
@@ -36,6 +42,7 @@ jobs:
           sudo apt-get install -y sshpass
 
       - name: Upload artifact
+        timeout-minutes: 10
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
@@ -46,11 +53,13 @@ jobs:
           : "${SSH_USER:?Missing SSH_USER secret}"
           : "${SSH_PASSWORD:?Missing SSH_PASSWORD secret}"
           SSH_PORT="${SSH_PORT:-22}"
+          SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
-          sshpass -p "${SSH_PASSWORD}" ssh -o StrictHostKeyChecking=no -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${DEPLOY_DIR}'"
-          sshpass -p "${SSH_PASSWORD}" scp -o StrictHostKeyChecking=no -P "${SSH_PORT}" admin-dist.tar.gz "${SSH_USER}@${SSH_HOST}:${DEPLOY_DIR}/admin-dist.tar.gz"
+          sshpass -p "${SSH_PASSWORD}" ssh ${SSH_OPTS} -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${DEPLOY_DIR}'"
+          sshpass -p "${SSH_PASSWORD}" scp ${SSH_OPTS} -P "${SSH_PORT}" admin-dist.tar.gz "${SSH_USER}@${SSH_HOST}:${DEPLOY_DIR}/admin-dist.tar.gz"
 
       - name: Deploy files
+        timeout-minutes: 5
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
@@ -61,8 +70,9 @@ jobs:
           : "${SSH_USER:?Missing SSH_USER secret}"
           : "${SSH_PASSWORD:?Missing SSH_PASSWORD secret}"
           SSH_PORT="${SSH_PORT:-22}"
+          SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
-          sshpass -p "${SSH_PASSWORD}" ssh -o StrictHostKeyChecking=no -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "DEPLOY_DIR='${DEPLOY_DIR}' bash -s" <<'EOF'
+          sshpass -p "${SSH_PASSWORD}" ssh ${SSH_OPTS} -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "DEPLOY_DIR='${DEPLOY_DIR}' bash -s" <<'EOF'
           set -euo pipefail
           mkdir -p "${DEPLOY_DIR}"
           tar -xzf "${DEPLOY_DIR}/admin-dist.tar.gz" -C "${DEPLOY_DIR}"
