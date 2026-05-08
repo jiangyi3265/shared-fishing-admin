@@ -86,7 +86,7 @@
 <script setup name="Order">
 import { listOrder, getOrder, finishOrder, cancelOrder } from '@/api/fishing/order'
 import { listVenue } from '@/api/fishing/venue'
-import { download } from '@/utils/request'
+import { ElMessageBox } from 'element-plus'
 
 const { proxy } = getCurrentInstance()
 const list = ref([])
@@ -130,7 +130,7 @@ function handleFinish(row) {
     .then(() => { proxy.$modal.msgSuccess('已结束计时'); getList() }).catch(() => {})
 }
 function handleCancel(row) {
-  proxy.$prompt('请输入取消原因', '取消订单', { inputPlaceholder: '取消原因', closeOnClickModal: false })
+  ElMessageBox.prompt('请输入取消原因', '取消订单', { inputPlaceholder: '取消原因', closeOnClickModal: false })
     .then(({ value }) => cancelOrder(row.orderId, value || ''))
     .then(() => { proxy.$modal.msgSuccess('已取消'); getList() }).catch(() => {})
 }

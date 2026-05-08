@@ -45,6 +45,8 @@
       </el-table-column>
     </el-table>
 
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
     <el-dialog :title="title" v-model="open" width="520px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="钓场" prop="venueId">
@@ -81,6 +83,7 @@ import { listVenue } from '@/api/fishing/venue'
 
 const { proxy } = getCurrentInstance()
 const list = ref([])
+const total = ref(0)
 const venueOptions = ref([])
 const venueNameMap = ref({})
 const open = ref(false)
@@ -100,7 +103,7 @@ const { form, queryParams, rules } = toRefs(data)
 
 function getList() {
   loading.value = true
-  listQrcode(queryParams.value).then(res => { list.value = res.rows; loading.value = false })
+  listQrcode(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false })
 }
 function loadVenues() {
   listVenue({ pageNum: 1, pageSize: 100 }).then(res => {

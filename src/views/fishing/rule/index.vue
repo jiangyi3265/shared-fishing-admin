@@ -173,3 +173,12 @@ function handleDelete(row) {
 
 getList()
 </script>
+
+<style scoped>
+.segment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+</style>
