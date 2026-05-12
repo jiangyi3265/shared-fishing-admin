@@ -61,7 +61,9 @@
         </el-form-item>
         <el-form-item label="标题" prop="title"><el-input v-model="form.title" /></el-form-item>
         <el-form-item label="描述" prop="description"><el-input v-model="form.description" /></el-form-item>
-        <el-form-item label="封面图" prop="image"><el-input v-model="form.image" placeholder="图片URL" /></el-form-item>
+        <el-form-item label="封面图" prop="image">
+          <image-upload v-model="form.image" :limit="1" />
+        </el-form-item>
         <el-form-item label="背景色" prop="bgColor"><el-input v-model="form.bgColor" placeholder="#fff3d1" /></el-form-item>
         <el-form-item label="详情内容" prop="content"><el-input v-model="form.content" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="排序"><el-input-number v-model="form.sortNum" :min="0" /></el-form-item>

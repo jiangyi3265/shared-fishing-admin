@@ -37,8 +37,9 @@
       <el-table-column label="状态" align="center" width="80">
         <template #default="s"><el-tag :type="s.row.status === '0' ? 'success' : 'info'">{{ s.row.status === '0' ? '正常' : '停用' }}</el-tag></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
         <template #default="s">
+          <el-button link type="primary" icon="Download" @click="handleDownloadQr(s.row)">二维码</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(s.row)" v-hasPermi="['fishing:qrcode:edit']">修改</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(s.row)" v-hasPermi="['fishing:qrcode:remove']">删除</el-button>
         </template>
@@ -74,10 +75,22 @@
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="qrVisible" title="二维码" width="400px" append-to-body>
+      <div style="text-align:center">
+        <p style="margin-bottom:12px;color:#666">{{ qrLabel }}</p>
+        <img v-if="qrImageUrl" :src="qrImageUrl" style="width:280px;height:280px" />
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="downloadQrImage">下载图片</el-button>
+        <el-button @click="qrVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Qrcode">
+import QRCode from 'qrcode'
 import { listQrcode, getQrcode, addQrcode, updateQrcode, delQrcode } from '@/api/fishing/qrcode'
 import { listVenue } from '@/api/fishing/venue'
 
@@ -131,6 +144,32 @@ function handleDelete(row) {
   proxy.$modal.confirm('确认删除该二维码?').then(() => delQrcode(row.qrId)).then(() => {
     getList(); proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
+}
+
+const qrVisible = ref(false)
+const qrImageUrl = ref('')
+const qrLabel = ref('')
+let currentQrRow = null
+
+function handleDownloadQr(row) {
+  currentQrRow = row
+  const path = `pages/index/index?action=${row.qrType}&qrId=${row.qrId}&venueId=${row.venueId}`
+  const venueName = venueNameMap.value[row.venueId] || row.venueId
+  const typeLabel = row.qrType === 'start' ? '入场' : '离场'
+  qrLabel.value = `${venueName} - ${typeLabel}码`
+  QRCode.toDataURL(path, { width: 560, margin: 2 }).then(url => {
+    qrImageUrl.value = url
+    qrVisible.value = true
+  })
+}
+
+function downloadQrImage() {
+  const link = document.createElement('a')
+  link.href = qrImageUrl.value
+  const venueName = venueNameMap.value[currentQrRow.venueId] || currentQrRow.venueId
+  const typeLabel = currentQrRow.qrType === 'start' ? '入场' : '离场'
+  link.download = `${venueName}_${typeLabel}码.png`
+  link.click()
 }
 
 loadVenues()

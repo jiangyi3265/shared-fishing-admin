@@ -37,7 +37,7 @@
           <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
         </el-input>
         <div class="login-code">
-          <img :src="codeUrl" @click="getCode" class="login-code-img"/>
+          <img v-if="codeUrl" :src="codeUrl" @click="getCode" class="login-code-img"/>
         </div>
       </el-form-item>
       <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住账号</el-checkbox>
@@ -140,10 +140,16 @@ function handleLogin() {
 function getCode() {
   getCodeImg().then(res => {
     captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled
-    if (captchaEnabled.value) {
+    if (captchaEnabled.value && res.img) {
       codeUrl.value = "data:image/gif;base64," + res.img
       loginForm.value.uuid = res.uuid
+    } else {
+      codeUrl.value = ""
+      loginForm.value.uuid = ""
     }
+  }).catch(() => {
+    codeUrl.value = ""
+    loginForm.value.uuid = ""
   })
 }
 
