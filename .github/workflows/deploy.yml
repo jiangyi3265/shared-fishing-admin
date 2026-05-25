@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEPLOY_DIR: /www/wwwroot/dyht.oksja.cn
+  DEPLOY_DIR: /www/wwwroot/ht.diaoyuus.cn
 
 jobs:
   deploy:
@@ -26,7 +26,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build:prod
