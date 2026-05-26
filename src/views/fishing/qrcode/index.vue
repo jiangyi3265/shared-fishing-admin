@@ -90,8 +90,7 @@
 </template>
 
 <script setup name="Qrcode">
-import QRCode from 'qrcode'
-import { listQrcode, getQrcode, addQrcode, updateQrcode, delQrcode } from '@/api/fishing/qrcode'
+import { listQrcode, getQrcode, addQrcode, updateQrcode, delQrcode, getWxaCode } from '@/api/fishing/qrcode'
 import { listVenue } from '@/api/fishing/venue'
 
 const { proxy } = getCurrentInstance()
@@ -153,12 +152,12 @@ let currentQrRow = null
 
 function handleDownloadQr(row) {
   currentQrRow = row
-  const path = `pages/index/index?action=${row.qrType}&qrId=${row.qrId}&venueId=${row.venueId}`
   const venueName = venueNameMap.value[row.venueId] || row.venueId
   const typeLabel = row.qrType === 'start' ? '入场' : '离场'
   qrLabel.value = `${venueName} - ${typeLabel}码`
-  QRCode.toDataURL(path, { width: 560, margin: 2 }).then(url => {
-    qrImageUrl.value = url
+  if (qrImageUrl.value && qrImageUrl.value.startsWith('blob:')) URL.revokeObjectURL(qrImageUrl.value)
+  getWxaCode(row.qrId, { envVersion: 'release', width: 430 }).then(blob => {
+    qrImageUrl.value = URL.createObjectURL(blob)
     qrVisible.value = true
   })
 }

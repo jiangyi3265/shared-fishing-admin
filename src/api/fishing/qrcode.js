@@ -15,3 +15,6 @@ export function updateQrcode(data) {
 export function delQrcode(qrId) {
   return request({ url: '/fishing/qrcode/' + qrId, method: 'delete' })
 }
+export function getWxaCode(qrId, params) {
+  return request({ url: '/fishing/qrcode/wxacode/' + qrId, method: 'get', params, responseType: 'blob' })
+}
