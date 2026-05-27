@@ -5,22 +5,22 @@
 @use './btn.scss';
 @use './ruoyi.scss';
 
-body {
-  height: 100%;
-  margin: 0;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  font-family: Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif;
-}
-
-label {
-  font-weight: 700;
-}
-
 html {
   height: 100%;
   box-sizing: border-box;
+  background: var(--app-bg);
+}
+
+body {
+  min-width: 320px;
+  height: 100%;
+  margin: 0;
+  color: var(--app-text);
+  background: var(--app-bg);
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 
 #app {
@@ -33,12 +33,14 @@ html {
   box-sizing: inherit;
 }
 
-.no-padding {
-  padding: 0px !important;
+::selection {
+  color: var(--app-text);
+  background: var(--app-primary-soft);
 }
 
-.padding-content {
-  padding: 4px 0;
+label {
+  color: var(--app-text-soft);
+  font-weight: 600;
 }
 
 a:focus,
@@ -52,6 +54,13 @@ a:hover {
   cursor: pointer;
   color: inherit;
   text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 div:focus {
@@ -97,83 +106,125 @@ div:focus {
   }
 }
 
+.no-padding {
+  padding: 0 !important;
+}
+
+.padding-content {
+  padding: 6px 0;
+}
+
 aside {
-  background: #eef1f6;
-  padding: 8px 24px;
-  margin-bottom: 20px;
-  border-radius: 2px;
   display: block;
-  line-height: 32px;
-  font-size: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-  color: #2c3e50;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  margin-bottom: 20px;
+  padding: 12px 18px;
+  color: var(--app-text-soft);
+  background: var(--app-primary-faint);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  line-height: 1.7;
+  font-size: 14px;
 
   a {
-    color: #337ab7;
-    cursor: pointer;
+    color: var(--app-primary-strong);
 
     &:hover {
-      color: rgb(32, 160, 255);
+      color: var(--app-primary);
     }
   }
 }
 
-//main-container全局样式
 .app-container {
-  padding: 20px;
+  min-height: 100%;
+  padding: 18px;
+  background: var(--app-bg);
 }
 
 .components-container {
-  margin: 30px 50px;
   position: relative;
+  margin: 18px;
+  padding: 22px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .text-center {
-  text-align: center
+  text-align: center;
 }
 
 .sub-navbar {
-  height: 50px;
-  line-height: 50px;
   position: relative;
   width: 100%;
+  min-height: 50px;
+  padding: 0 20px;
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
   text-align: right;
-  padding-right: 20px;
-  transition: 600ms ease position;
-  background: linear-gradient(90deg, rgba(32, 182, 249, 1) 0%, rgba(32, 182, 249, 1) 0%, rgba(33, 120, 241, 1) 100%, rgba(33, 120, 241, 1) 100%);
+  line-height: 50px;
+  transition: background 180ms cubic-bezier(.16, 1, .3, 1);
 
   .subtitle {
-    font-size: 20px;
-    color: #fff;
+    color: var(--app-text);
+    font-size: 17px;
+    font-weight: 700;
   }
 
-  &.draft {
-    background: #d0d0d0;
-  }
-
+  &.draft,
   &.deleted {
-    background: #d0d0d0;
+    background: var(--app-surface-muted);
   }
 }
 
 .link-type,
 .link-type:focus {
-  color: #337ab7;
+  color: var(--app-primary-strong);
   cursor: pointer;
+  font-weight: 600;
 
   &:hover {
-    color: rgb(32, 160, 255);
+    color: var(--app-primary);
   }
 }
 
 .filter-container {
-  padding-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow-sm);
 
   .filter-item {
-    display: inline-block;
+    display: inline-flex;
     vertical-align: middle;
-    margin-bottom: 10px;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 12px;
+  }
+
+  .components-container {
+    margin: 12px;
+    padding: 16px;
+  }
+
+  .filter-container {
+    align-items: stretch;
+    padding: 12px;
+
+    .filter-item,
+    .el-button {
+      width: 100%;
+    }
   }
 }

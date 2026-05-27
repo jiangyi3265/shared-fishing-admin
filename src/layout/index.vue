@@ -84,8 +84,7 @@ function setLayout() {
 }
 
 .drawer-bg {
-  background: #000;
-  opacity: 0.3;
+  background: oklch(15% 0.025 205 / 0.48);
   width: 100%;
   top: 0;
   height: 100%;
@@ -99,11 +98,11 @@ function setLayout() {
   right: 0;
   z-index: 9;
   width: calc(100% - #{vars.$base-sidebar-width});
-  transition: width 0.28s;
+  transition: width .24s cubic-bezier(.16, 1, .3, 1);
 }
 
 .hideSidebar .fixed-header {
-  width: calc(100% - 54px);
+  width: calc(100% - 58px);
 }
 
 .sidebarHide .fixed-header {

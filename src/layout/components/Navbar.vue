@@ -142,39 +142,43 @@ async function toggleTheme(event) {
 }
 
 .navbar {
-  height: 50px;
+  height: 56px;
   overflow: hidden;
   position: relative;
   background: var(--navbar-bg);
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  border-bottom: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-sm);
   display: flex;
   align-items: center;
-  // padding: 0 8px;
+  padding: 0 12px 0 10px;
   box-sizing: border-box;
 
   .hamburger-container {
-    line-height: 46px;
-    height: 100%;
+    width: 38px;
+    height: 38px;
+    margin-right: 10px;
+    border-radius: var(--app-radius);
     cursor: pointer;
-    transition: background 0.3s;
+    transition: background-color 160ms cubic-bezier(.16, 1, .3, 1);
     -webkit-tap-highlight-color: transparent;
     display: flex;
     align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    margin-right: 8px;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.025);
+      background: var(--navbar-hover);
     }
   }
 
   .breadcrumb-container {
     flex-shrink: 0;
+    min-width: 0;
   }
 
   .topmenu-container {
     position: absolute;
-    left: 50px;
+    left: 58px;
   }
 
   .topbar-container {
@@ -183,7 +187,7 @@ async function toggleTheme(event) {
     display: flex;
     align-items: center;
     overflow: hidden;
-    margin-left: 8px;
+    margin-left: 10px;
   }
 
   .errLog-container {
@@ -193,9 +197,9 @@ async function toggleTheme(event) {
 
   .right-menu {
     height: 100%;
-    line-height: 50px;
     display: flex;
     align-items: center;
+    gap: 6px;
     margin-left: auto;
 
     &:focus {
@@ -203,59 +207,68 @@ async function toggleTheme(event) {
     }
 
     .right-menu-item {
-      display: inline-block;
-      padding: 0 8px;
-      height: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      height: 38px;
+      padding: 0 10px;
+      color: var(--app-text-soft);
+      border-radius: var(--app-radius);
       font-size: 18px;
-      color: #5a5e66;
-      vertical-align: text-bottom;
 
       &.hover-effect {
         cursor: pointer;
-        transition: background 0.3s;
+        transition: color 160ms cubic-bezier(.16, 1, .3, 1),
+          background-color 160ms cubic-bezier(.16, 1, .3, 1);
 
         &:hover {
-          background: rgba(0, 0, 0, 0.025);
+          color: var(--app-text);
+          background: var(--navbar-hover);
         }
       }
 
       &.theme-switch-wrapper {
-        display: flex;
-        align-items: center;
-
         svg {
-          transition: transform 0.3s;
+          transition: transform 160ms cubic-bezier(.16, 1, .3, 1);
           
           &:hover {
-            transform: scale(1.15);
+            transform: rotate(-10deg) scale(1.08);
           }
         }
       }
     }
 
     .avatar-container {
-      margin-right: 0px;
-      padding-right: 0px;
+      min-width: auto;
+      margin-right: 0;
+      padding: 0 8px;
 
       .avatar-wrapper {
-        margin-top: 10px;
-        right: 8px;
-        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
 
         .user-avatar {
           cursor: pointer;
           width: 30px;
           height: 30px;
-          margin-right: 8px;
+          flex: 0 0 auto;
+          border: 1px solid var(--app-border);
           border-radius: 50%;
+          background: var(--app-surface-muted);
         }
 
-        .user-nickname{
-          position: relative;
-          left: 0px;
-          bottom: 10px;
+        .user-nickname {
+          display: inline-block;
+          max-width: 120px;
+          overflow: hidden;
+          color: var(--app-text);
           font-size: 14px;
-          font-weight: bold;
+          font-weight: 650;
+          line-height: 1;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         i {
@@ -265,6 +278,21 @@ async function toggleTheme(event) {
           top: 25px;
           font-size: 12px;
         }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    height: 52px;
+    padding-right: 8px;
+
+    .right-menu {
+      gap: 2px;
+
+      .avatar-container .avatar-wrapper .user-nickname {
+        display: none;
       }
     }
   }

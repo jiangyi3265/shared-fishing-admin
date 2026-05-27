@@ -1,8 +1,33 @@
-// cover some element-ui styles
+:root {
+  --el-color-primary: var(--app-primary);
+  --el-color-success: var(--app-success);
+  --el-color-warning: var(--app-warning);
+  --el-color-danger: var(--app-danger);
+  --el-color-info: var(--app-text-muted);
+  --el-bg-color: var(--app-surface);
+  --el-bg-color-overlay: var(--app-surface-raised);
+  --el-text-color-primary: var(--app-text);
+  --el-text-color-regular: var(--app-text-soft);
+  --el-text-color-secondary: var(--app-text-muted);
+  --el-border-color: var(--app-border-strong);
+  --el-border-color-light: var(--app-border);
+  --el-border-color-lighter: var(--app-border);
+  --el-fill-color-light: var(--app-primary-faint);
+  --el-fill-color-lighter: var(--app-surface-muted);
+  --el-border-radius-base: var(--app-radius-sm);
+  --el-border-radius-small: var(--app-radius-sm);
+  --el-box-shadow-light: var(--app-shadow);
+}
 
 .el-breadcrumb__inner,
 .el-breadcrumb__inner a {
-  font-weight: 400 !important;
+  color: var(--app-text-muted) !important;
+  font-weight: 500 !important;
+}
+
+.el-breadcrumb__item:last-child .el-breadcrumb__inner {
+  color: var(--app-text);
+  font-weight: 650 !important;
 }
 
 .el-upload {
@@ -17,7 +42,7 @@
 
 .cell {
   .el-tag {
-    margin-right: 0px;
+    margin-right: 0;
   }
 }
 
@@ -30,8 +55,8 @@
 
 .fixed-width {
   .el-button--mini {
-    padding: 7px 10px;
     width: 60px;
+    padding: 7px 10px;
   }
 }
 
@@ -41,20 +66,139 @@
     text-align: center;
 
     .el-tag {
-      margin-right: 0px;
+      margin-right: 0;
     }
   }
 }
 
-// to fixed https://github.com/ElemeFE/element/issues/2461
+.el-button {
+  font-weight: 600;
+  transition: color 160ms cubic-bezier(.16, 1, .3, 1),
+    background-color 160ms cubic-bezier(.16, 1, .3, 1),
+    border-color 160ms cubic-bezier(.16, 1, .3, 1),
+    box-shadow 160ms cubic-bezier(.16, 1, .3, 1),
+    transform 160ms cubic-bezier(.16, 1, .3, 1);
+
+  &:focus-visible {
+    box-shadow: var(--app-focus-ring);
+  }
+
+  &:active:not(.is-disabled) {
+    transform: translateY(1px);
+  }
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--app-primary);
+  --el-button-border-color: var(--app-primary);
+  --el-button-hover-bg-color: var(--app-primary-strong);
+  --el-button-hover-border-color: var(--app-primary-strong);
+  --el-button-active-bg-color: var(--app-primary-strong);
+  --el-button-active-border-color: var(--app-primary-strong);
+  box-shadow: 0 8px 18px oklch(45% 0.1 170 / 0.18);
+}
+
+.el-button.is-plain {
+  background: var(--app-surface);
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-cascader .el-input__wrapper {
+  background: var(--app-surface);
+  border-radius: var(--app-radius-sm);
+  box-shadow: 0 0 0 1px var(--app-border) inset;
+  transition: box-shadow 160ms cubic-bezier(.16, 1, .3, 1),
+    background-color 160ms cubic-bezier(.16, 1, .3, 1);
+
+  &:hover {
+    box-shadow: 0 0 0 1px var(--app-border-strong) inset;
+  }
+
+  &.is-focus,
+  &:focus {
+    box-shadow: 0 0 0 1px var(--app-primary) inset, var(--app-focus-ring);
+  }
+}
+
+.el-card {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.el-card__header {
+  border-bottom: 1px solid var(--app-border);
+}
+
+.el-table {
+  --el-table-bg-color: var(--app-surface);
+  --el-table-tr-bg-color: var(--app-surface);
+  --el-table-header-bg-color: var(--app-surface-muted);
+  --el-table-header-text-color: var(--app-text-soft);
+  --el-table-border-color: var(--app-border);
+  --el-table-row-hover-bg-color: var(--app-primary-faint);
+  border-radius: var(--app-radius);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--app-border) inset;
+
+  th.el-table__cell {
+    font-weight: 700;
+  }
+
+  .el-table__cell {
+    border-bottom-color: var(--app-border);
+  }
+}
+
+.el-pagination.is-background {
+  .btn-prev,
+  .btn-next,
+  .el-pager li {
+    background: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-sm);
+  }
+
+  .el-pager li.is-active {
+    background: var(--app-primary);
+    border-color: var(--app-primary);
+  }
+}
+
 .el-dialog {
-  transform: none;
   left: 0;
   position: relative;
   margin: 0 auto;
+  overflow: hidden;
+  background: var(--app-surface);
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--app-shadow-lg);
+  transform: none;
 }
 
-// refine element ui upload
+.el-dialog__header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.el-dialog__body {
+  color: var(--app-text-soft);
+}
+
+.el-drawer,
+.el-message-box {
+  background: var(--app-surface);
+  border-radius: var(--app-radius);
+}
+
+.el-tag {
+  border-radius: var(--app-radius-sm);
+}
+
 .upload-container {
   .el-upload {
     width: 100%;
@@ -62,23 +206,32 @@
     .el-upload-dragger {
       width: 100%;
       height: 200px;
+      background: var(--app-primary-faint);
+      border-color: var(--app-border);
+      border-radius: var(--app-radius);
     }
   }
 }
 
-// dropdown
 .el-dropdown-menu {
+  padding: 6px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow);
+
   a {
-    display: block
+    display: block;
   }
 }
 
-// fix date-picker ui bug in filter-item
+.el-dropdown-menu__item {
+  border-radius: var(--app-radius-sm);
+}
+
 .el-range-editor.el-input__inner {
   display: inline-flex !important;
 }
 
-// to fix el-date-picker css style
 .el-range-separator {
   box-sizing: content-box;
 }
@@ -91,6 +244,6 @@
   display: none;
 }
 
-.el-dropdown .el-dropdown-link{
-  color: var(--el-color-primary) !important;
+.el-dropdown .el-dropdown-link {
+  color: var(--app-primary-strong) !important;
 }

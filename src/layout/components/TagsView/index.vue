@@ -261,49 +261,62 @@ function handleScroll() {
 
 <style lang="scss" scoped>
 .tags-view-container {
-  height: 34px;
+  height: 36px;
   width: 100%;
   background: var(--tags-bg, #fff);
   border-bottom: 1px solid var(--tags-item-border, #d8dce5);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .12), 0 0 3px 0 rgba(0, 0, 0, .04);
+  box-shadow: var(--app-shadow-sm);
 
   .tags-view-wrapper {
+    padding: 0 10px;
+
     .tags-view-item {
       display: inline-block;
       position: relative;
       cursor: pointer;
-      height: 26px;
+      height: 28px;
       line-height: 26px;
       border: 1px solid var(--tags-item-border, #d8dce5);
       color: var(--tags-item-text, #495060);
       background: var(--tags-item-bg, #fff);
-      padding: 0 8px;
+      padding: 0 10px;
+      border-radius: 999px;
       font-size: 12px;
-      margin-left: 5px;
+      font-weight: 600;
+      margin-left: 6px;
       margin-top: 4px;
+      transition: color 160ms cubic-bezier(.16, 1, .3, 1),
+        background-color 160ms cubic-bezier(.16, 1, .3, 1),
+        border-color 160ms cubic-bezier(.16, 1, .3, 1);
 
       &:first-of-type {
-        margin-left: 15px;
+        margin-left: 0;
       }
 
       &:last-of-type {
-        margin-right: 15px;
+        margin-right: 0;
+      }
+
+      &:hover {
+        color: var(--app-text);
+        background: var(--tags-item-hover);
       }
 
       &.active {
-        background-color: #42b983;
-        color: #fff;
-        border-color: #42b983;
+        color: var(--app-surface);
+        background-color: var(--app-primary);
+        border-color: var(--app-primary);
 
         &::before {
           content: '';
-          background: #fff;
+          background: var(--app-surface);
           display: inline-block;
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           position: relative;
-          margin-right: 5px;
+          margin-right: 6px;
+          top: -1px;
         }
       }
     }
@@ -319,17 +332,21 @@ function handleScroll() {
     z-index: 3000;
     position: absolute;
     list-style-type: none;
-    padding: 5px 0;
-    border-radius: 4px;
+    padding: 6px;
+    border-radius: var(--app-radius);
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 600;
     color: var(--tags-item-text, #333);
-    box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, .3);
+    box-shadow: var(--app-shadow);
     border: 1px solid var(--el-border-color-light, #e4e7ed);
 
     li {
+      display: flex;
+      align-items: center;
+      gap: 7px;
       margin: 0;
-      padding: 7px 16px;
+      padding: 8px 12px;
+      border-radius: var(--app-radius-sm);
       cursor: pointer;
 
       &:hover {
@@ -350,7 +367,8 @@ function handleScroll() {
       vertical-align: 2px;
       border-radius: 50%;
       text-align: center;
-      transition: all .3s cubic-bezier(.645, .045, .355, 1);
+      transition: background-color 160ms cubic-bezier(.16, 1, .3, 1),
+        color 160ms cubic-bezier(.16, 1, .3, 1);
       transform-origin: 100% 50%;
 
       &:before {
@@ -361,9 +379,7 @@ function handleScroll() {
 
       &:hover {
         background-color: var(--tags-close-hover, #b4bccc);
-        color: #fff;
-        width: 12px !important;
-        height: 12px !important;
+        color: var(--app-surface);
       }
     }
   }

@@ -306,3 +306,100 @@
 .splitpanes.default-theme .splitpanes__pane {
   background-color: var(--splitpanes-default-bg) !important;
 }
+
+.el-form--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 12px;
+
+  .el-form-item {
+    margin-right: 0;
+    margin-bottom: 0;
+  }
+}
+
+.el-form .el-form-item__label {
+  color: var(--app-text-soft);
+  font-weight: 600;
+}
+
+.el-table {
+  color: var(--app-text-soft);
+
+  .el-table__header-wrapper,
+  .el-table__fixed-header-wrapper {
+    th {
+      color: var(--app-text-soft);
+      background-color: var(--app-surface-muted) !important;
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+  }
+}
+
+.form-header {
+  margin: 8px 0 20px;
+  padding-bottom: 8px;
+  color: var(--app-primary-strong);
+  border-bottom: 1px solid var(--app-border);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pagination-container {
+  align-items: center;
+  min-height: 44px;
+  margin-top: 16px;
+  padding: 10px 0 0;
+}
+
+.tree-border {
+  border-color: var(--app-border);
+  background: var(--app-surface);
+  border-radius: var(--app-radius);
+}
+
+.el-table .el-dropdown-link {
+  color: var(--app-primary-strong);
+  font-weight: 600;
+}
+
+.el-card__header {
+  padding: 16px 18px 12px !important;
+  min-height: 44px;
+}
+
+.el-card__body {
+  padding: 18px !important;
+}
+
+.card-box {
+  margin-bottom: 14px;
+}
+
+.text-navy,
+.text-info {
+  color: var(--app-primary-strong);
+}
+
+.text-success {
+  color: var(--app-success);
+}
+
+.text-warning {
+  color: var(--app-warning);
+}
+
+.text-danger {
+  color: var(--app-danger);
+}
+
+.text-muted {
+  color: var(--app-text-muted);
+}
+
+.sortable-ghost {
+  color: var(--app-text) !important;
+  background: var(--app-primary-soft) !important;
+}

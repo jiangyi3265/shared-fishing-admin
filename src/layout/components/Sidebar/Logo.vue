@@ -54,7 +54,7 @@ const getLogoTextColor = computed(() => {
 
 <style lang="scss" scoped>
 .sidebarLogoFade-enter-active {
-  transition: opacity 1.5s;
+  transition: opacity 180ms cubic-bezier(.16, 1, .3, 1);
 }
 
 .sidebarLogoFade-enter,
@@ -64,38 +64,55 @@ const getLogoTextColor = computed(() => {
 
 .sidebar-logo-container {
   position: relative;
-  height: 50px;
-  line-height: 50px;
+  height: 58px;
+  line-height: 58px;
   background: v-bind(getLogoBackground);
-  text-align: center;
+  border-bottom: 1px solid oklch(39% 0.035 205 / 0.42);
+  text-align: left;
   overflow: hidden;
 
   & .sidebar-logo-link {
+    display: flex;
+    align-items: center;
     height: 100%;
     width: 100%;
+    padding: 0 14px;
 
     & .sidebar-logo {
-      width: 32px;
-      height: 32px;
-      vertical-align: middle;
-      margin-right: 12px;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      margin-right: 10px;
+      border-radius: 10px;
+      object-fit: contain;
     }
 
     & .sidebar-title {
       display: inline-block;
       margin: 0;
       color: v-bind(getLogoTextColor);
-      font-weight: 600;
-      line-height: 50px;
-      font-size: 14px;
-      font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
+      overflow: hidden;
+      font-weight: 750;
+      line-height: 1.1;
+      font-size: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", system-ui, sans-serif;
+      letter-spacing: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       vertical-align: middle;
     }
   }
 
   &.collapse {
+    text-align: center;
+
+    .sidebar-logo-link {
+      justify-content: center;
+      padding: 0;
+    }
+
     .sidebar-logo {
-      margin-right: 0px;
+      margin-right: 0;
     }
   }
 }
