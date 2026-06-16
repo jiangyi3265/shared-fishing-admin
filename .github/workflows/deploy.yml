@@ -5,12 +5,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-admin-web
   cancel-in-progress: true
 
 env:
   DEPLOY_DIR: /www/wwwroot/ht.diaoyuus.cn
+  PACKAGE_NAME: admin-dist.tar.gz
 
 jobs:
   deploy:
@@ -24,6 +28,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -33,48 +38,84 @@ jobs:
 
       - name: Package artifact
         run: |
-          tar -czf admin-dist.tar.gz -C dist .
-          ls -lh admin-dist.tar.gz
+          set -euo pipefail
+          tar -czf "${PACKAGE_NAME}" -C dist .
+          ls -lh "${PACKAGE_NAME}"
 
       - name: Install SSH helper
         run: |
           sudo apt-get update
           sudo apt-get install -y sshpass
 
-      - name: Upload artifact
+      - name: Upload and deploy
         timeout-minutes: 10
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          : "${SSH_HOST:?Missing SSH_HOST secret}"
-          : "${SSH_USER:?Missing SSH_USER secret}"
-          : "${SSH_PASSWORD:?Missing SSH_PASSWORD secret}"
-          SSH_PORT="${SSH_PORT:-22}"
-          SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
-
-          sshpass -p "${SSH_PASSWORD}" ssh ${SSH_OPTS} -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${DEPLOY_DIR}'"
-          sshpass -p "${SSH_PASSWORD}" scp ${SSH_OPTS} -P "${SSH_PORT}" admin-dist.tar.gz "${SSH_USER}@${SSH_HOST}:${DEPLOY_DIR}/admin-dist.tar.gz"
-
-      - name: Deploy files
-        timeout-minutes: 5
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-        run: |
-          : "${SSH_HOST:?Missing SSH_HOST secret}"
-          : "${SSH_USER:?Missing SSH_USER secret}"
-          : "${SSH_PASSWORD:?Missing SSH_PASSWORD secret}"
-          SSH_PORT="${SSH_PORT:-22}"
-          SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
-
-          sshpass -p "${SSH_PASSWORD}" ssh ${SSH_OPTS} -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "DEPLOY_DIR='${DEPLOY_DIR}' bash -s" <<'EOF'
           set -euo pipefail
+
+          : "${SSH_HOST:?Missing SSH_HOST secret}"
+          : "${SSH_USER:?Missing SSH_USER secret}"
+          SSH_PORT="${SSH_PORT:-22}"
+
+          if [ -z "${SSH_PRIVATE_KEY:-}" ] && [ -z "${SSH_PASSWORD:-}" ]; then
+            echo "Set either SSH_PRIVATE_KEY or SSH_PASSWORD in GitHub Actions secrets."
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh_cmd=(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -p "${SSH_PORT}")
+          scp_cmd=(scp -o StrictHostKeyChecking=no -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -P "${SSH_PORT}")
+
+          if [ -n "${SSH_PRIVATE_KEY:-}" ]; then
+            printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+            ssh_cmd+=(-i ~/.ssh/deploy_key)
+            scp_cmd+=(-i ~/.ssh/deploy_key)
+          fi
+
+          remote="${SSH_USER}@${SSH_HOST}"
+
+          remote_ssh() {
+            if [ -n "${SSH_PRIVATE_KEY:-}" ]; then
+              "${ssh_cmd[@]}" "${remote}" "$@"
+            else
+              sshpass -p "${SSH_PASSWORD}" "${ssh_cmd[@]}" "${remote}" "$@"
+            fi
+          }
+
+          remote_scp() {
+            if [ -n "${SSH_PRIVATE_KEY:-}" ]; then
+              "${scp_cmd[@]}" "$1" "${remote}:$2"
+            else
+              sshpass -p "${SSH_PASSWORD}" "${scp_cmd[@]}" "$1" "${remote}:$2"
+            fi
+          }
+
+          remote_ssh "mkdir -p '${DEPLOY_DIR}'"
+          remote_scp "${PACKAGE_NAME}" "${DEPLOY_DIR}/${PACKAGE_NAME}"
+
+          remote_ssh "bash -s" -- "${DEPLOY_DIR}" "${PACKAGE_NAME}" <<'EOF'
+          set -euo pipefail
+
+          DEPLOY_DIR="$1"
+          PACKAGE_NAME="$2"
+          TMP_DIR="$(mktemp -d)"
+
+          cleanup() {
+            rm -rf "${TMP_DIR}"
+          }
+          trap cleanup EXIT
+
           mkdir -p "${DEPLOY_DIR}"
-          tar -xzf "${DEPLOY_DIR}/admin-dist.tar.gz" -C "${DEPLOY_DIR}"
+          tar -xzf "${DEPLOY_DIR}/${PACKAGE_NAME}" -C "${TMP_DIR}"
+          cp -a "${TMP_DIR}/." "${DEPLOY_DIR}/"
+          rm -f "${DEPLOY_DIR}/${PACKAGE_NAME}"
+
           echo "Admin web deployed to ${DEPLOY_DIR}."
           EOF
