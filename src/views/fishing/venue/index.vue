@@ -30,6 +30,12 @@
       <el-table-column label="地址" align="center" prop="address" :show-overflow-tooltip="true" />
       <el-table-column label="电话" align="center" prop="phone" width="140" />
       <el-table-column label="计费规则" align="center" prop="ruleId" width="100" />
+      <el-table-column label="路人鱼价(元/斤)" align="center" width="130">
+        <template #default="s"><span>{{ s.row.fishPriceCents != null ? (s.row.fishPriceCents / 100).toFixed(2) : '默认11.80' }}</span></template>
+      </el-table-column>
+      <el-table-column label="会员鱼价(元/斤)" align="center" width="130">
+        <template #default="s"><span>{{ s.row.fishMemberPriceCents != null ? (s.row.fishMemberPriceCents / 100).toFixed(2) : '默认9.80' }}</span></template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="80">
         <template #default="s">
           <el-tag :type="s.row.status === '0' ? 'success' : 'info'">{{ s.row.status === '0' ? '正常' : '停用' }}</el-tag>
@@ -58,6 +64,14 @@
           <el-select v-model="form.ruleId" placeholder="请选择规则" clearable style="width:100%">
             <el-option v-for="r in ruleOptions" :key="r.ruleId" :label="r.ruleName" :value="r.ruleId" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="路人鱼价">
+          <el-input-number v-model="form.fishPriceYuan" :min="0" :precision="2" :step="0.1" controls-position="right" style="width:160px" />
+          <span style="margin-left:8px;color:#909399">元 / 斤（留空用默认 11.80）</span>
+        </el-form-item>
+        <el-form-item label="会员鱼价">
+          <el-input-number v-model="form.fishMemberPriceYuan" :min="0" :precision="2" :step="0.1" controls-position="right" style="width:160px" />
+          <span style="margin-left:8px;color:#909399">元 / 斤（留空用默认 9.80）</span>
         </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="form.status">
@@ -128,14 +142,29 @@ function handleAdd() { reset(); open.value = true; title.value = '新增钓场' 
 function handleUpdate(row) {
   reset()
   const venueId = row?.venueId || ids.value[0]
-  getVenue(venueId).then(res => { form.value = res.data; open.value = true; title.value = '修改钓场' })
+  getVenue(venueId).then(res => {
+    form.value = res.data
+    // 分 → 元，回显到表单
+    form.value.fishPriceYuan = res.data.fishPriceCents != null ? res.data.fishPriceCents / 100 : undefined
+    form.value.fishMemberPriceYuan = res.data.fishMemberPriceCents != null ? res.data.fishMemberPriceCents / 100 : undefined
+    open.value = true
+    title.value = '修改钓场'
+  })
 }
 function submitForm() {
   proxy.$refs.formRef.validate(valid => {
     if (!valid) return
-    const fn = form.value.venueId ? updateVenue : addVenue
-    fn(form.value).then(() => {
-      proxy.$modal.msgSuccess(form.value.venueId ? '修改成功' : '新增成功')
+    // 元 → 分（留空则置 null，由后端落到默认价）
+    const payload = { ...form.value }
+    payload.fishPriceCents = (payload.fishPriceYuan === undefined || payload.fishPriceYuan === null || payload.fishPriceYuan === '')
+      ? null : Math.round(payload.fishPriceYuan * 100)
+    payload.fishMemberPriceCents = (payload.fishMemberPriceYuan === undefined || payload.fishMemberPriceYuan === null || payload.fishMemberPriceYuan === '')
+      ? null : Math.round(payload.fishMemberPriceYuan * 100)
+    delete payload.fishPriceYuan
+    delete payload.fishMemberPriceYuan
+    const fn = payload.venueId ? updateVenue : addVenue
+    fn(payload).then(() => {
+      proxy.$modal.msgSuccess(payload.venueId ? '修改成功' : '新增成功')
       open.value = false
       getList()
     })
