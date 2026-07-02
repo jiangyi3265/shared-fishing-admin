@@ -55,6 +55,8 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          ADMIN_HEALTH_URL: ${{ secrets.ADMIN_HEALTH_URL }}
+          EXTRA_REQUIRED_SERVICES: ${{ secrets.EXTRA_REQUIRED_SERVICES }}
         run: |
           set -euo pipefail
 
@@ -99,6 +101,8 @@ jobs:
 
           remote_ssh "mkdir -p '${DEPLOY_DIR}'"
           remote_scp "${PACKAGE_NAME}" "${DEPLOY_DIR}/${PACKAGE_NAME}"
+          printf '%s' "${EXTRA_REQUIRED_SERVICES:-}" > .extra_required_services
+          remote_scp .extra_required_services "${DEPLOY_DIR}/.extra_required_services"
 
           remote_ssh "bash -s" -- "${DEPLOY_DIR}" "${PACKAGE_NAME}" <<'EOF'
           set -euo pipefail
@@ -106,6 +110,7 @@ jobs:
           DEPLOY_DIR="$1"
           PACKAGE_NAME="$2"
           TMP_DIR="$(mktemp -d)"
+          EXTRA_REQUIRED_SERVICES="$(cat "${DEPLOY_DIR}/.extra_required_services" 2>/dev/null || true)"
 
           cleanup() {
             rm -rf "${TMP_DIR}"
@@ -115,7 +120,79 @@ jobs:
           mkdir -p "${DEPLOY_DIR}"
           tar -xzf "${DEPLOY_DIR}/${PACKAGE_NAME}" -C "${TMP_DIR}"
           cp -a "${TMP_DIR}/." "${DEPLOY_DIR}/"
-          rm -f "${DEPLOY_DIR}/${PACKAGE_NAME}"
+          rm -f "${DEPLOY_DIR}/${PACKAGE_NAME}" "${DEPLOY_DIR}/.extra_required_services"
+
+          run_systemctl() {
+            if [ "$(id -u)" -eq 0 ]; then
+              systemctl "$@"
+            else
+              sudo -n systemctl "$@"
+            fi
+          }
+
+          run_privileged() {
+            if [ "$(id -u)" -eq 0 ]; then
+              "$@"
+            else
+              sudo -n "$@"
+            fi
+          }
+
+          unit_exists() {
+            local svc="$1"
+            systemctl list-unit-files "${svc}.service" --no-legend 2>/dev/null | grep -q "${svc}.service" \
+              || systemctl status "${svc}.service" >/dev/null 2>&1
+          }
+
+          assert_unit_active() {
+            local svc="$1"
+            run_systemctl is-active --quiet "${svc}.service"
+            echo "Service ${svc}.service is active."
+          }
+
+          if command -v nginx >/dev/null 2>&1; then
+            run_privileged nginx -t
+          else
+            echo "Warning: nginx command was not found on the server."
+          fi
+
+          if command -v systemctl >/dev/null 2>&1; then
+            if unit_exists nginx; then
+              assert_unit_active nginx
+              run_systemctl reload nginx
+              echo "Nginx reloaded."
+            else
+              echo "Warning: nginx.service was not found."
+            fi
+
+            for svc in ${EXTRA_REQUIRED_SERVICES:-}; do
+              assert_unit_active "${svc}"
+            done
+          else
+            echo "systemctl is not available; skipped system service checks."
+          fi
 
           echo "Admin web deployed to ${DEPLOY_DIR}."
           EOF
+
+      - name: Verify public admin site
+        env:
+          ADMIN_HEALTH_URL: ${{ secrets.ADMIN_HEALTH_URL }}
+        run: |
+          set -euo pipefail
+          HEALTH_URL="${ADMIN_HEALTH_URL:-https://ht.diaoyuus.cn/}"
+
+          for i in $(seq 1 20); do
+            if curl -fsS --max-time 8 "${HEALTH_URL}" >/tmp/admin-health.html; then
+              if grep -Eqi '<div id="app"|<title' /tmp/admin-health.html; then
+                echo "Admin site health check passed: ${HEALTH_URL}"
+                head -c 500 /tmp/admin-health.html || true
+                echo
+                exit 0
+              fi
+            fi
+            sleep 3
+          done
+
+          echo "Admin site health check failed: ${HEALTH_URL}"
+          exit 1
