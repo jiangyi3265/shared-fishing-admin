@@ -158,9 +158,16 @@ jobs:
 
           if command -v systemctl >/dev/null 2>&1; then
             if unit_exists nginx; then
-              assert_unit_active nginx
-              run_systemctl reload nginx
-              echo "Nginx reloaded."
+              if run_systemctl is-active --quiet nginx.service; then
+                echo "Service nginx.service is active."
+                if run_systemctl reload nginx; then
+                  echo "Nginx reloaded."
+                else
+                  echo "Warning: nginx reload failed. Continuing; public site health check remains authoritative."
+                fi
+              else
+                echo "Warning: nginx.service exists but is not systemd-active. Continuing; public site health check remains authoritative."
+              fi
             else
               echo "Warning: nginx.service was not found."
             fi
