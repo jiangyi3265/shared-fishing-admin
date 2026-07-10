@@ -1,6 +1,11 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form-item label="钓场" prop="venueId">
+        <el-select v-model="queryParams.venueId" placeholder="选择钓场" clearable style="width:180px">
+          <el-option v-for="v in venueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="钓位名" prop="spotName">
         <el-input v-model="queryParams.spotName" placeholder="钓位名称" clearable style="width:180px" @keyup.enter="handleQuery" />
       </el-form-item>
@@ -22,6 +27,7 @@
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" prop="spotId" width="70" align="center" />
+      <el-table-column label="所属钓场" prop="venueName" align="center" />
       <el-table-column label="钓位名" prop="spotName" align="center" />
       <el-table-column label="类型" width="80" align="center">
         <template #default="s"><el-tag :type="s.row.spotType==='vip'?'warning':'info'">{{ s.row.spotType==='vip'?'VIP':'普通' }}</el-tag></template>
@@ -44,6 +50,11 @@
 
     <el-dialog :title="title" v-model="open" width="520px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="所属钓场" prop="venueId">
+          <el-select v-model="form.venueId" placeholder="请选择钓场" style="width:100%">
+            <el-option v-for="v in venueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="钓位名称" prop="spotName"><el-input v-model="form.spotName" /></el-form-item>
         <el-form-item label="类型"><el-radio-group v-model="form.spotType"><el-radio label="normal">普通</el-radio><el-radio label="vip">VIP</el-radio></el-radio-group></el-form-item>
         <el-form-item label="附加费(分)"><el-input-number v-model="form.extraFeeCents" :min="0" /></el-form-item>
@@ -59,19 +70,33 @@
 
 <script setup name="FishSpot">
 import { listSpot, getSpot, addSpot, updateSpot, delSpot } from '@/api/fishing/spot'
+import { listVenue } from '@/api/fishing/venue'
 const { proxy } = getCurrentInstance()
-const loading = ref(true), list = ref([]), open = ref(false), title = ref(''), total = ref(0), ids = ref([]), single = ref(true), multiple = ref(true), showSearch = ref(true)
-const queryParams = ref({ pageNum:1, pageSize:10, spotName:null, spotType:null })
-const form = ref({}), rules = { spotName:[{required:true,message:'请输入钓位名称',trigger:'blur'}] }
+const loading = ref(true), list = ref([]), venueOptions = ref([]), open = ref(false), title = ref(''), total = ref(0), ids = ref([]), single = ref(true), multiple = ref(true), showSearch = ref(true)
+const queryParams = ref({ pageNum:1, pageSize:10, venueId:null, spotName:null, spotType:null })
+const form = ref({}), rules = {
+  venueId:[{required:true,message:'请选择所属钓场',trigger:'change'}],
+  spotName:[{required:true,message:'请输入钓位名称',trigger:'blur'}]
+}
 
 function getList() { loading.value=true; listSpot(queryParams.value).then(r=>{list.value=r.rows;total.value=r.total;loading.value=false}) }
+function loadVenues() {
+  listVenue({ pageNum:1, pageSize:100 }).then(r=>{
+    venueOptions.value=r.rows||[]
+    if (!form.value.venueId && venueOptions.value.length===1) form.value.venueId=venueOptions.value[0].venueId
+  })
+}
 function handleQuery() { queryParams.value.pageNum=1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(s) { ids.value=s.map(i=>i.spotId); single.value=s.length!==1; multiple.value=!s.length }
-function reset() { form.value={spotType:'normal',status:'0',extraFeeCents:0,capacity:1,sortNum:0} }
+function reset() {
+  form.value={spotType:'normal',status:'0',extraFeeCents:0,capacity:1,sortNum:0}
+  if (venueOptions.value.length===1) form.value.venueId=venueOptions.value[0].venueId
+}
 function handleAdd() { reset(); open.value=true; title.value='新增钓位' }
 function handleUpdate(row) { getSpot(row.spotId||ids.value[0]).then(r=>{form.value=r.data;open.value=true;title.value='修改钓位'}) }
 function submitForm() { proxy.$refs.formRef.validate(v=>{if(!v)return;if(form.value.spotId){updateSpot(form.value).then(()=>{proxy.$modal.msgSuccess('修改成功');open.value=false;getList()})}else{addSpot(form.value).then(()=>{proxy.$modal.msgSuccess('新增成功');open.value=false;getList()})}}) }
 function handleDelete(row) { const d=row.spotId?[row.spotId]:ids.value; proxy.$modal.confirm('确认删除？').then(()=>delSpot(d)).then(()=>{getList();proxy.$modal.msgSuccess('删除成功')}) }
+loadVenues()
 getList()
 </script>
