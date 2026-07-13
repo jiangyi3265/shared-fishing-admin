@@ -3,11 +3,12 @@
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="70px">
       <el-form-item label="钓场" prop="venueId">
         <el-select v-model="queryParams.venueId" placeholder="选择钓场" clearable style="width:180px">
-          <el-option v-for="v in venueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" />
+          <el-option v-for="v in activeVenueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" />
         </el-select>
       </el-form-item>
       <el-form-item label="类型" prop="qrType">
         <el-select v-model="queryParams.qrType" placeholder="类型" clearable style="width:140px">
+          <el-option label="通用场码" value="common" />
           <el-option label="入场" value="start" />
           <el-option label="离场" value="end" />
         </el-select>
@@ -28,11 +29,11 @@
         <template #default="s">{{ venueNameMap[s.row.venueId] || s.row.venueId }}</template>
       </el-table-column>
       <el-table-column label="类型" align="center" width="100">
-        <template #default="s"><el-tag :type="s.row.qrType === 'start' ? 'success' : 'warning'">{{ s.row.qrType === 'start' ? '入场' : '离场' }}</el-tag></template>
+        <template #default="s"><el-tag :type="qrTypeTag(s.row.qrType)">{{ qrTypeLabel(s.row.qrType) }}</el-tag></template>
       </el-table-column>
       <el-table-column label="场景值" align="center" prop="sceneValue" />
-      <el-table-column label="小程序链接" align="center" :show-overflow-tooltip="true">
-        <template #default="s">pages/index/index?action={{ s.row.qrType }}&qrId={{ s.row.qrId }}&venueId={{ s.row.venueId }}</template>
+      <el-table-column label="小程序码场景" align="center" :show-overflow-tooltip="true">
+        <template #default="s">pages/index/index?scene=qrId%3D{{ s.row.qrId }}</template>
       </el-table-column>
       <el-table-column label="状态" align="center" width="80">
         <template #default="s"><el-tag :type="s.row.status === '0' ? 'success' : 'info'">{{ s.row.status === '0' ? '正常' : '停用' }}</el-tag></template>
@@ -50,13 +51,17 @@
 
     <el-dialog :title="title" v-model="open" width="520px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-alert class="qr-type-tip" type="info" :closable="false" show-icon>
+          <template #title>推荐使用“通用场码”：首次扫码开始计时，再次扫描同一个码进入结算。入场码、离场码仅用于兼容旧数据。</template>
+        </el-alert>
         <el-form-item label="钓场" prop="venueId">
           <el-select v-model="form.venueId" style="width:100%">
-            <el-option v-for="v in venueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" />
+            <el-option v-for="v in formVenueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" :disabled="String(v.status ?? '0') !== '0'" />
           </el-select>
         </el-form-item>
         <el-form-item label="类型" prop="qrType">
           <el-radio-group v-model="form.qrType">
+            <el-radio label="common">通用场码（开始/结算）</el-radio>
             <el-radio label="start">入场</el-radio>
             <el-radio label="end">离场</el-radio>
           </el-radio-group>
@@ -97,6 +102,12 @@ const { proxy } = getCurrentInstance()
 const list = ref([])
 const total = ref(0)
 const venueOptions = ref([])
+const activeVenueOptions = computed(() => venueOptions.value.filter(venue => String(venue.status ?? '0') === '0'))
+const formVenueOptions = computed(() => {
+  const active = activeVenueOptions.value
+  const current = venueOptions.value.find(venue => venue.venueId === form.value.venueId)
+  return current && !active.some(venue => venue.venueId === current.venueId) ? [...active, current] : active
+})
 const venueNameMap = ref({})
 const open = ref(false)
 const loading = ref(true)
@@ -104,7 +115,7 @@ const showSearch = ref(true)
 const title = ref('')
 
 const data = reactive({
-  form: { qrType: 'start', status: '0' },
+  form: { qrType: 'common', status: '0' },
   queryParams: { pageNum: 1, pageSize: 20, venueId: undefined, qrType: undefined },
   rules: {
     venueId: [{ required: true, message: '请选择钓场' }],
@@ -121,10 +132,27 @@ function loadVenues() {
   listVenue({ pageNum: 1, pageSize: 100 }).then(res => {
     venueOptions.value = res.rows || []
     venueNameMap.value = (res.rows || []).reduce((acc, v) => { acc[v.venueId] = v.name; return acc }, {})
+    if (!form.value.venueId && activeVenueOptions.value.length === 1) form.value.venueId = activeVenueOptions.value[0].venueId
   })
 }
 function cancel() { open.value = false; reset() }
-function reset() { form.value = { qrType: 'start', status: '0' }; proxy.resetForm('formRef') }
+function clearFormValidate() { nextTick(() => proxy.$refs.formRef?.clearValidate()) }
+function reset() {
+  form.value = { qrType: 'common', status: '0' }
+  if (activeVenueOptions.value.length === 1) form.value.venueId = activeVenueOptions.value[0].venueId
+  clearFormValidate()
+}
+function qrTypeLabel(qrType) {
+  if (qrType === 'common') return '通用场码'
+  if (qrType === 'start') return '入场码'
+  if (qrType === 'end') return '离场码'
+  return qrType || '未知类型'
+}
+function qrTypeTag(qrType) {
+  if (qrType === 'common') return 'primary'
+  if (qrType === 'start') return 'success'
+  return 'warning'
+}
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
 function handleAdd() { reset(); open.value = true; title.value = '新增二维码' }
@@ -153,8 +181,8 @@ let currentQrRow = null
 function handleDownloadQr(row) {
   currentQrRow = row
   const venueName = venueNameMap.value[row.venueId] || row.venueId
-  const typeLabel = row.qrType === 'start' ? '入场' : '离场'
-  qrLabel.value = `${venueName} - ${typeLabel}码`
+  const typeLabel = qrTypeLabel(row.qrType)
+  qrLabel.value = `${venueName} - ${typeLabel}`
   if (qrImageUrl.value && qrImageUrl.value.startsWith('blob:')) URL.revokeObjectURL(qrImageUrl.value)
   getWxaCode(row.qrId, { envVersion: 'release', width: 430 }).then(blob => {
     qrImageUrl.value = URL.createObjectURL(blob)
@@ -166,11 +194,15 @@ function downloadQrImage() {
   const link = document.createElement('a')
   link.href = qrImageUrl.value
   const venueName = venueNameMap.value[currentQrRow.venueId] || currentQrRow.venueId
-  const typeLabel = currentQrRow.qrType === 'start' ? '入场' : '离场'
-  link.download = `${venueName}_${typeLabel}码.png`
+  const typeLabel = qrTypeLabel(currentQrRow.qrType)
+  link.download = `${venueName}_${typeLabel}.png`
   link.click()
 }
 
 loadVenues()
 getList()
 </script>
+
+<style scoped>
+.qr-type-tip { margin-bottom: 18px; }
+</style>

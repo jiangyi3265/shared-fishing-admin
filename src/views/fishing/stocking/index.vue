@@ -1,6 +1,11 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form-item label="所属钓场" prop="venueId">
+        <el-select v-model="queryParams.venueId" placeholder="请选择钓场" clearable style="width:180px">
+          <el-option v-for="v in activeVenueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="鱼种" prop="fishSpecies">
         <el-input v-model="queryParams.fishSpecies" placeholder="请输入鱼种" clearable style="width:180px" @keyup.enter="handleQuery" />
       </el-form-item>
@@ -22,6 +27,9 @@
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="recordId" width="70" />
+      <el-table-column label="所属钓场" align="center" prop="venueName" min-width="120">
+        <template #default="s">{{ s.row.venueName || venueNameMap[s.row.venueId] || s.row.venueId || '--' }}</template>
+      </el-table-column>
       <el-table-column label="鱼种" align="center" prop="fishSpecies" />
       <el-table-column label="斤数" align="center" prop="weightJin" width="90" />
       <el-table-column label="尾数" align="center" prop="fishCount" width="80" />
@@ -46,8 +54,13 @@
 
     <el-dialog :title="title" v-model="open" width="600px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="所属钓场" prop="venueId">
+          <el-select v-model="form.venueId" placeholder="请选择钓场" style="width:100%">
+            <el-option v-for="v in formVenueOptions" :key="v.venueId" :label="v.name" :value="v.venueId" :disabled="String(v.status ?? '0') !== '0'" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="鱼种" prop="fishSpecies"><el-input v-model="form.fishSpecies" placeholder="如：鲤鱼、草鱼" /></el-form-item>
-        <el-form-item label="斤数" prop="weightJin"><el-input-number v-model="form.weightJin" :min="0" :precision="1" /></el-form-item>
+        <el-form-item label="斤数" prop="weightJin"><el-input-number v-model="form.weightJin" :min="0.1" :precision="1" /></el-form-item>
         <el-form-item label="尾数"><el-input-number v-model="form.fishCount" :min="0" /></el-form-item>
         <el-form-item label="放鱼时间" prop="stockingTime">
           <el-date-picker v-model="form.stockingTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择时间" />
@@ -73,10 +86,19 @@
 
 <script setup name="Stocking">
 import { listStocking, getStocking, addStocking, updateStocking, delStocking } from '@/api/fishing/stocking'
+import { listVenue } from '@/api/fishing/venue'
 
 const { proxy } = getCurrentInstance()
 const loading = ref(true)
 const list = ref([])
+const venueOptions = ref([])
+const activeVenueOptions = computed(() => venueOptions.value.filter(venue => String(venue.status ?? '0') === '0'))
+const formVenueOptions = computed(() => {
+  const active = activeVenueOptions.value
+  const current = venueOptions.value.find(venue => venue.venueId === form.value.venueId)
+  return current && !active.some(venue => venue.venueId === current.venueId) ? [...active, current] : active
+})
+const venueNameMap = ref({})
 const open = ref(false)
 const title = ref('')
 const total = ref(0)
@@ -85,11 +107,15 @@ const single = ref(true)
 const multiple = ref(true)
 const showSearch = ref(true)
 const dateRange = ref([])
-const queryParams = ref({ pageNum: 1, pageSize: 10, fishSpecies: null })
+const queryParams = ref({ pageNum: 1, pageSize: 10, venueId: null, fishSpecies: null })
 const form = ref({})
 const rules = {
+  venueId: [{ required: true, message: '请选择所属钓场', trigger: 'change' }],
   fishSpecies: [{ required: true, message: '请输入鱼种', trigger: 'blur' }],
-  weightJin: [{ required: true, message: '请输入斤数', trigger: 'blur' }],
+  weightJin: [
+    { required: true, message: '请输入斤数', trigger: 'blur' },
+    { validator: validateWeightJin, trigger: ['blur', 'change'] }
+  ],
   stockingTime: [{ required: true, message: '请选择放鱼时间', trigger: 'change' }]
 }
 
@@ -108,7 +134,27 @@ function getList() {
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { dateRange.value = []; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.recordId); single.value = sel.length !== 1; multiple.value = !sel.length }
-function reset() { form.value = { status: '0' } }
+function loadVenues() {
+  listVenue({ pageNum: 1, pageSize: 100 }).then(res => {
+    venueOptions.value = res.rows || []
+    venueNameMap.value = venueOptions.value.reduce((acc, venue) => {
+      acc[venue.venueId] = venue.name
+      return acc
+    }, {})
+    if (!form.value.venueId && activeVenueOptions.value.length === 1) form.value.venueId = activeVenueOptions.value[0].venueId
+  })
+}
+function clearFormValidate() { nextTick(() => proxy.$refs.formRef?.clearValidate()) }
+function validateWeightJin(rule, value, callback) {
+  if (value === null || value === undefined || value === '') return callback()
+  if (!Number.isFinite(Number(value)) || Number(value) <= 0) return callback(new Error('放鱼斤数必须大于 0'))
+  callback()
+}
+function reset() {
+  form.value = { status: '0' }
+  if (activeVenueOptions.value.length === 1) form.value.venueId = activeVenueOptions.value[0].venueId
+  clearFormValidate()
+}
 function handleAdd() { reset(); open.value = true; title.value = '新增放鱼记录' }
 function handleUpdate(row) {
   const id = row.recordId || ids.value[0]
@@ -130,5 +176,6 @@ function handleDelete(row) {
 }
 function cancel() { open.value = false; reset() }
 
+loadVenues()
 getList()
 </script>

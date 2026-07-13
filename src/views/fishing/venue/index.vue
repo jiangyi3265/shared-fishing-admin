@@ -54,10 +54,17 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="560px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="钓场名称" prop="name"><el-input v-model="form.name" placeholder="请输入钓场名称" /></el-form-item>
         <el-form-item label="地址" prop="address"><el-input v-model="form.address" placeholder="请输入地址" /></el-form-item>
+        <el-form-item label="经度" prop="longitude">
+          <el-input-number v-model="form.longitude" :min="-180" :max="180" :precision="7" :step="0.0000001" controls-position="right" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="纬度" prop="latitude">
+          <el-input-number v-model="form.latitude" :min="-90" :max="90" :precision="7" :step="0.0000001" controls-position="right" style="width:100%" />
+          <div class="coordinate-tip">请填写腾讯/微信地图使用的 GCJ-02 坐标，经纬度需同时填写；配置后小程序才可准确导航。</div>
+        </el-form-item>
         <el-form-item label="公告" prop="notice"><el-input v-model="form.notice" type="textarea" :rows="2" /></el-form-item>
         <el-form-item label="联系方式" prop="phone"><el-input v-model="form.phone" /></el-form-item>
         <el-form-item label="计费规则" prop="ruleId">
@@ -107,10 +114,12 @@ const total = ref(0)
 const title = ref('')
 
 const data = reactive({
-  form: { status: '0' },
+  form: { status: '0', longitude: null, latitude: null },
   queryParams: { pageNum: 1, pageSize: 10, name: undefined, status: undefined },
   rules: {
-    name: [{ required: true, message: '钓场名称不能为空', trigger: 'blur' }]
+    name: [{ required: true, message: '钓场名称不能为空', trigger: 'blur' }],
+    longitude: [{ validator: validateLongitude, trigger: ['blur', 'change'] }],
+    latitude: [{ validator: validateLatitude, trigger: ['blur', 'change'] }]
   }
 })
 const { form, queryParams, rules } = toRefs(data)
@@ -127,9 +136,30 @@ function loadRules() {
   listRule({ pageNum: 1, pageSize: 100, status: '0' }).then(res => { ruleOptions.value = res.rows || [] })
 }
 function cancel() { open.value = false; reset() }
+function clearFormValidate() { nextTick(() => proxy.$refs.formRef?.clearValidate()) }
 function reset() {
-  form.value = { status: '0' }
-  proxy.resetForm('formRef')
+  form.value = { status: '0', longitude: null, latitude: null }
+  clearFormValidate()
+}
+function isCoordinateEmpty(value) {
+  return value === null || value === undefined || value === ''
+}
+function validateLongitude(rule, value, callback) {
+  if (isCoordinateEmpty(value) && isCoordinateEmpty(form.value.latitude)) return callback()
+  if (isCoordinateEmpty(value)) return callback(new Error('填写纬度时必须同时填写经度'))
+  if (!Number.isFinite(Number(value)) || Number(value) < -180 || Number(value) > 180) return callback(new Error('经度范围应为 -180 至 180'))
+  if (Number(value) === 0 && Number(form.value.latitude) === 0) return callback(new Error('经纬度不能同时为 0，请填写真实钓场坐标'))
+  callback()
+}
+function validateLatitude(rule, value, callback) {
+  if (isCoordinateEmpty(value) && isCoordinateEmpty(form.value.longitude)) return callback()
+  if (isCoordinateEmpty(value)) return callback(new Error('填写经度时必须同时填写纬度'))
+  if (!Number.isFinite(Number(value)) || Number(value) < -90 || Number(value) > 90) return callback(new Error('纬度范围应为 -90 至 90'))
+  if (Number(value) === 0 && Number(form.value.longitude) === 0) return callback(new Error('经纬度不能同时为 0，请填写真实钓场坐标'))
+  callback()
+}
+function normalizeCoordinate(value) {
+  return isCoordinateEmpty(value) ? null : Number(value)
 }
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { proxy.resetForm('queryRef'); handleQuery() }
@@ -143,7 +173,11 @@ function handleUpdate(row) {
   reset()
   const venueId = row?.venueId || ids.value[0]
   getVenue(venueId).then(res => {
-    form.value = res.data
+    form.value = {
+      ...res.data,
+      longitude: normalizeCoordinate(res.data.longitude),
+      latitude: normalizeCoordinate(res.data.latitude)
+    }
     // 分 → 元，回显到表单
     form.value.fishPriceYuan = res.data.fishPriceCents != null ? res.data.fishPriceCents / 100 : undefined
     form.value.fishMemberPriceYuan = res.data.fishMemberPriceCents != null ? res.data.fishMemberPriceCents / 100 : undefined
@@ -181,3 +215,13 @@ function handleDelete(row) {
 getList()
 loadRules()
 </script>
+
+<style scoped>
+.coordinate-tip {
+  width: 100%;
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
+}
+</style>
